@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  application:
+    name: documanager-app
+
+  datasource:
+    url: jdbc:mysql://localhost:3308/documanager?useSSL=false&serverTimezone=UTC
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+jwt:
+  secret: documanager-clave-secreta-super-larga-2025
+  expiration: 86400000
+
+archivos:
+  ruta: C:/xampp/htdocs/documanager/archivos/
