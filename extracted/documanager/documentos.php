@@ -8,13 +8,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['_action'])) {
     if (!isEditor()) { $error = 'No tienes permisos para esta acción.'; goto show; }
 
     $id = (int)($_POST['id'] ?? 0);
+    $action = $_POST['_action'] ?? '';
 
-    if ($_POST['_action'] === 'archivar') {
+    if ($action === 'archivar') {
         $res = api('DELETE', "/documentos/$id");
-        $msg = $res['code'] === 204 ? 'Documento archivado correctamente.' : 'Error al archivar.';
+        if ($res['code'] === 204) {
+            header('Location: /documanager/documentos.php?msg=' . urlencode('Documento archivado correctamente.'));
+            exit;
+        }
+        $error = $res['data']['message'] ?? 'Error al archivar.';
     }
 
-    if (in_array($_POST['_action'], ['crear','editar'])) {
+    if (in_array($action, ['crear','editar'], true)) {
+        $fechaDoc = trim($_POST['fechaDoc'] ?? '');
+        if ($action === 'crear' && $fechaDoc === '') {
+            $fechaDoc = date('Y-m-d');
+        }
+
         $data = [
             'titulo'      => trim($_POST['titulo'] ?? ''),
             'descripcion' => trim($_POST['descripcion'] ?? ''),
@@ -22,21 +32,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['_action'])) {
             'estado'      => $_POST['estado'] ?? 'BORRADOR',
             'categoriaId' => $_POST['categoriaId'] ? (int)$_POST['categoriaId'] : null,
             'cliente'     => trim($_POST['cliente'] ?? ''),
-            'fechaDoc'    => $_POST['fechaDoc'] ?: null,
+            'fechaDoc'    => $fechaDoc !== '' ? $fechaDoc : null,
             'etiquetas'   => trim($_POST['etiquetas'] ?? ''),
             'confidencial'=> isset($_POST['confidencial']),
         ];
-        if ($_POST['_action'] === 'crear') {
+
+        if ($action === 'crear') {
             $res = api('POST', '/documentos', $data);
-            $msg = $res['code'] === 201 ? 'Documento creado correctamente.' : 'Error al crear el documento.';
+            $docId = (int)($res['data']['id'] ?? 0);
+            $successCode = $res['code'] === 201;
+            $successMsg = 'Documento creado correctamente.';
         } else {
             $res = api('PUT', "/documentos/$id", $data);
-            $msg = $res['code'] === 200 ? 'Documento actualizado correctamente.' : 'Error al actualizar.';
+            $docId = $id;
+            $successCode = $res['code'] === 200;
+            $successMsg = 'Documento actualizado correctamente.';
         }
 
-        // Subir archivo si se seleccionó uno
-        if (isset($_FILES['archivo']) && $_FILES['archivo']['error'] === 0 && isset($res['data']['id'])) {
-            $docId = $res['data']['id'];
+        if ($successCode && isset($_FILES['archivo']) && $_FILES['archivo']['error'] === 0 && $docId > 0) {
             $ch = curl_init("http://localhost:8080/archivos/subir/$docId");
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
@@ -51,6 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['_action'])) {
             curl_exec($ch);
             curl_close($ch);
         }
+
+        if ($successCode) {
+            header('Location: /documanager/documentos.php?msg=' . urlencode($successMsg));
+            exit;
+        }
+
+        $error = $res['data']['message'] ?? ($action === 'crear' ? 'Error al crear el documento.' : 'Error al actualizar el documento.');
     }
 }
 
@@ -88,6 +108,9 @@ if (isset($_GET['edit']) && isEditor()) {
 }
 
 $hayFiltros = $buscar || $tipoFil || $estadoFil || $clienteFil || $catFil || $fechaDesde || $fechaHasta;
+$msg = $_GET['msg'] ?? $msg;
+$tiposDocumento = ['CONTRATO','FACTURA','REPORTE','FORMULARIO','MANUAL','PDF_ESCANEADO','ACUERDO','OTRO'];
+$estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -150,13 +173,6 @@ $hayFiltros = $buscar || $tipoFil || $estadoFil || $clienteFil || $catFil || $fe
         </div>
     </div>
 
-    <?php if(!isEditor()): ?>
-    <div class="readonly-notice">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Estás en modo solo lectura. Contacta a un editor o administrador para modificar documentos.
-    </div>
-    <?php endif; ?>
-
     <?php if($msg): ?><div class="alert alert-success"><?= htmlspecialchars($msg) ?></div><?php endif; ?>
     <?php if($error): ?><div class="alert alert-error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 
@@ -171,7 +187,7 @@ $hayFiltros = $buscar || $tipoFil || $estadoFil || $clienteFil || $catFil || $fe
                    style="flex:2;min-width:200px">
             <select name="estado" class="form-control" style="flex:1;min-width:130px">
                 <option value="">Todos los estados</option>
-                <?php foreach(['BORRADOR','REVISION','PUBLICADO','ARCHIVADO'] as $e): ?>
+                <?php foreach($estadosDocumento as $e): ?>
                 <option value="<?=$e?>" <?= $estadoFil===$e?'selected':'' ?>><?= $e ?></option>
                 <?php endforeach; ?>
             </select>
@@ -192,7 +208,7 @@ $hayFiltros = $buscar || $tipoFil || $estadoFil || $clienteFil || $catFil || $fe
                 <label>Tipo de documento</label>
                 <select name="tipo" class="form-control">
                     <option value="">Todos los tipos</option>
-                    <?php foreach(['CONTRATO','FACTURA','REPORTE','MANUAL','FORMULARIO','ACUERDO','MEMORANDO','OFICIO','OTRO'] as $t): ?>
+                    <?php foreach($tiposDocumento as $t): ?>
                     <option value="<?=$t?>" <?= $tipoFil===$t?'selected':'' ?>><?=$t?></option>
                     <?php endforeach; ?>
                 </select>
@@ -270,41 +286,45 @@ $hayFiltros = $buscar || $tipoFil || $estadoFil || $clienteFil || $catFil || $fe
                 <tbody>
                 <?php foreach($documentos as $d): ?>
                 <tr>
-                    <td style="color:var(--text-3)"><?= $d['id'] ?></td>
+                    <td style="color:var(--text-3)"><?= docValue($d, 'id') ?></td>
                     <td>
-                        <strong><?= htmlspecialchars($d['titulo']) ?></strong>
-                        <?php if($d['confidencial'] ?? false): ?>
+                        <strong><?= htmlspecialchars(docValue($d, 'titulo') ?? '') ?></strong>
+                        <?php if((bool)(docValue($d, 'confidencial') ?? false)): ?>
                         <span style="color:var(--warning);margin-left:4px" title="Confidencial">🔒</span>
                         <?php endif; ?>
-                        <?php if(!empty($d['etiquetas'])): ?>
-                        <br><span style="font-size:0.72rem;color:var(--text-3)"><?= htmlspecialchars($d['etiquetas']) ?></span>
+                        <?php if(!empty(docValue($d, 'etiquetas'))): ?>
+                        <br><span style="font-size:0.72rem;color:var(--text-3)"><?= htmlspecialchars(docValue($d, 'etiquetas') ?? '') ?></span>
                         <?php endif; ?>
                     </td>
-                    <td><?= htmlspecialchars($d['tipo'] ?? '-') ?></td>
-                    <td><span class="badge badge-<?= strtolower($d['estado'] ?? 'borrador') ?>"><?= $d['estado'] ?? 'BORRADOR' ?></span></td>
-                    <td><?= htmlspecialchars($d['cliente'] ?? '-') ?></td>
-                    <td><?= !empty($d['fechaDoc']) ? date('d/m/Y', strtotime($d['fechaDoc'])) : '-' ?></td>
-                    <td><?= $d['vistas'] ?? 0 ?></td>
+                    <td><?= htmlspecialchars(docValue($d, 'tipo') ?? '-') ?></td>
+                    <td><span class="badge badge-<?= strtolower(docValue($d, 'estado') ?? 'borrador') ?>"><?= docValue($d, 'estado') ?? 'BORRADOR' ?></span></td>
+                    <td><?= htmlspecialchars(docValue($d, 'cliente') ?? '-') ?></td>
+                    <td><?= ($fechaDocFila = docValue($d, 'fecha')) ? date('d/m/Y', strtotime($fechaDocFila)) : '-' ?></td>
+                    <td><?= (int)(docValue($d, 'vistas') ?? 0) ?></td>
                     <td>
-                        <?php if(!empty($d['archivoNombre'])): ?>
-                        <a href="http://localhost:8080/archivos/descargar/<?= $d['id'] ?>"
-                           class="btn btn-success btn-sm" target="_blank">⬇️ Descargar</a>
+                        <?php if(docValue($d, 'archivoNombre')): ?>
+                        <div style="display:flex;gap:5px;flex-wrap:wrap">
+                            <a href="/documanager/ver_documento.php?id=<?= docValue($d, 'id') ?>"
+                               class="btn btn-secondary btn-sm">Ver detalles</a>
+                            <a href="http://localhost:8080/archivos/descargar/<?= docValue($d, 'id') ?>"
+                               class="btn btn-success btn-sm" target="_blank">⬇️ Descargar</a>
+                        </div>
                         <?php else: ?>
                         <span style="color:var(--text-3);font-size:0.78rem">Sin archivo</span>
                         <?php endif; ?>
                     </td>
                     <td>
-                        <a href="/documanager/historial.php?doc=<?= $d['id'] ?>"
+                        <a href="/documanager/historial.php?doc=<?= docValue($d, 'id') ?>"
                            class="btn btn-secondary btn-sm" title="Ver historial">📋</a>
                     </td>
                     <?php if(isEditor()): ?>
                     <td>
                         <div style="display:flex;gap:5px">
-                            <a href="?edit=<?= $d['id'] ?>" class="btn btn-secondary btn-sm">Editar</a>
-                            <?php if(($d['estado'] ?? '') !== 'ARCHIVADO'): ?>
+                            <a href="?edit=<?= docValue($d, 'id') ?>" class="btn btn-secondary btn-sm">Editar</a>
+                            <?php if((docValue($d, 'estado') ?? '') !== 'ARCHIVADO'): ?>
                             <form method="POST" onsubmit="return confirm('¿Archivar este documento?')">
                                 <input type="hidden" name="_action" value="archivar">
-                                <input type="hidden" name="id" value="<?= $d['id'] ?>">
+                                <input type="hidden" name="id" value="<?= docValue($d, 'id') ?>">
                                 <button type="submit" class="btn btn-danger btn-sm">Archivar</button>
                             </form>
                             <?php endif; ?>
@@ -335,31 +355,31 @@ $hayFiltros = $buscar || $tipoFil || $estadoFil || $clienteFil || $catFil || $fe
         </div>
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="_action" value="<?= $editDoc ? 'editar' : 'crear' ?>">
-            <input type="hidden" name="id" value="<?= $editDoc['id'] ?? '' ?>">
+            <input type="hidden" name="id" value="<?= docValue($editDoc ?? [], 'id') ?? '' ?>">
 
             <div class="form-group">
                 <label>Título *</label>
                 <input type="text" name="titulo" class="form-control" required
-                       value="<?= htmlspecialchars($editDoc['titulo'] ?? '') ?>">
+                       value="<?= htmlspecialchars(docValue($editDoc ?? [], 'titulo') ?? '') ?>">
             </div>
             <div class="form-group">
                 <label>Descripción</label>
-                <textarea name="descripcion" class="form-control"><?= htmlspecialchars($editDoc['descripcion'] ?? '') ?></textarea>
+                <textarea name="descripcion" class="form-control"><?= htmlspecialchars(docValue($editDoc ?? [], 'descripcion') ?? '') ?></textarea>
             </div>
             <div class="grid-2">
                 <div class="form-group">
                     <label>Tipo de documento</label>
                     <select name="tipo" class="form-control">
-                        <?php foreach(['CONTRATO','FACTURA','REPORTE','MANUAL','FORMULARIO','ACUERDO','MEMORANDO','OFICIO','OTRO'] as $t): ?>
-                        <option value="<?=$t?>" <?= ($editDoc['tipo'] ?? '') === $t ? 'selected' : '' ?>><?=$t?></option>
+                        <?php foreach($tiposDocumento as $t): ?>
+                        <option value="<?=$t?>" <?= (docValue($editDoc ?? [], 'tipo') ?? '') === $t ? 'selected' : '' ?>><?=$t?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Estado</label>
                     <select name="estado" class="form-control">
-                        <?php foreach(['BORRADOR','REVISION','PUBLICADO','ARCHIVADO'] as $e): ?>
-                        <option value="<?=$e?>" <?= ($editDoc['estado'] ?? 'BORRADOR') === $e ? 'selected' : '' ?>><?=$e?></option>
+                        <?php foreach($estadosDocumento as $e): ?>
+                        <option value="<?=$e?>" <?= (docValue($editDoc ?? [], 'estado') ?? 'BORRADOR') === $e ? 'selected' : '' ?>><?=$e?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -370,7 +390,7 @@ $hayFiltros = $buscar || $tipoFil || $estadoFil || $clienteFil || $catFil || $fe
                     <select name="categoriaId" class="form-control">
                         <option value="">Sin categoría</option>
                         <?php foreach($categorias as $c): ?>
-                        <option value="<?=$c['id']?>" <?= ($editDoc['categoriaId'] ?? '') == $c['id'] ? 'selected' : '' ?>>
+                        <option value="<?=$c['id']?>" <?= (docValue($editDoc ?? [], 'categoria') ?? '') == $c['id'] ? 'selected' : '' ?>>
                             <?= htmlspecialchars($c['nombre']) ?>
                         </option>
                         <?php endforeach; ?>
@@ -379,37 +399,42 @@ $hayFiltros = $buscar || $tipoFil || $estadoFil || $clienteFil || $catFil || $fe
                 <div class="form-group">
                     <label>Cliente / Empresa</label>
                     <input type="text" name="cliente" class="form-control"
-                           value="<?= htmlspecialchars($editDoc['cliente'] ?? '') ?>">
+                           value="<?= htmlspecialchars(docValue($editDoc ?? [], 'cliente') ?? '') ?>">
                 </div>
             </div>
             <div class="grid-2">
                 <div class="form-group">
                     <label>Fecha del documento</label>
-                    <input type="date" name="fechaDoc" class="form-control"
-                           value="<?= $editDoc['fechaDoc'] ?? '' ?>">
+                    <input type="date" name="fechaDoc" id="fechaDocInput" class="form-control"
+                           value="<?= htmlspecialchars(docValue($editDoc ?? [], 'fecha') ?? date('Y-m-d')) ?>"
+                           placeholder="<?= $editDoc ? '' : 'Se guardará la fecha del archivo o la fecha de hoy' ?>">
+                    <?php if(!$editDoc): ?>
+                    <small style="display:block;margin-top:6px;color:var(--text-3);font-size:0.75rem">Si seleccionas un archivo nuevo, tomaremos su fecha. Si no, se guardará la fecha de hoy.</small>
+                    <?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label>Etiquetas</label>
                     <input type="text" name="etiquetas" class="form-control"
                            placeholder="urgente, legal, 2025..."
-                           value="<?= htmlspecialchars($editDoc['etiquetas'] ?? '') ?>">
+                           value="<?= htmlspecialchars(docValue($editDoc ?? [], 'etiquetas') ?? '') ?>">
                 </div>
             </div>
             <div class="checkbox-row">
                 <input type="checkbox" name="confidencial" id="conf"
-                       <?= ($editDoc['confidencial'] ?? false) ? 'checked' : '' ?>>
+                       <?= (docValue($editDoc ?? [], 'confidencial') ?? false) ? 'checked' : '' ?>>
                 <label for="conf">🔒 Marcar como documento confidencial</label>
             </div>
             <div class="form-group" style="margin-top:1rem">
-                <label>Archivo adjunto (PDF, Word, Excel)</label>
-                <input type="file" name="archivo" accept=".pdf,.doc,.docx,.xls,.xlsx"
+                <label>Archivo adjunto (PDF, Word, Excel, imágenes)</label>
+                <input type="file" name="archivo" id="archivoInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.webp,.gif"
                        class="form-control" style="padding:6px">
-                <?php if(!empty($editDoc['archivoNombre'])): ?>
+                <small style="display:block;margin-top:6px;color:var(--text-3);font-size:0.75rem">Formatos soportados: PDF, Word, Excel, CSV e imágenes PNG/JPG/JPEG/WEBP/GIF.</small>
+                <?php if(docValue($editDoc ?? [], 'archivoNombre')): ?>
                 <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
                     <span style="font-size:0.8rem;color:var(--text-2)">
-                        📎 <?= htmlspecialchars($editDoc['archivoNombre']) ?>
+                        📎 <?= htmlspecialchars(docValue($editDoc ?? [], 'archivoNombre') ?? '') ?>
                     </span>
-                    <a href="http://localhost:8080/archivos/descargar/<?= $editDoc['id'] ?>"
+                    <a href="http://localhost:8080/archivos/descargar/<?= docValue($editDoc ?? [], 'id') ?>"
                        class="btn btn-success btn-sm" target="_blank">⬇️ Descargar</a>
                 </div>
                 <?php endif; ?>
@@ -440,6 +465,27 @@ function toggleAvanzado() {
     const label = document.getElementById('toggleLabel');
     const open  = panel.classList.toggle('show');
     label.textContent = open ? 'Ocultar búsqueda avanzada' : 'Búsqueda avanzada';
+}
+
+const archivoInput = document.getElementById('archivoInput');
+const fechaDocInput = document.getElementById('fechaDocInput');
+if (archivoInput && fechaDocInput) {
+    archivoInput.addEventListener('change', () => {
+        const archivo = archivoInput.files && archivoInput.files[0];
+        if (!archivo || fechaDocInput.dataset.manual === '1') return;
+
+        if (archivo.lastModified) {
+            const fecha = new Date(archivo.lastModified);
+            const yyyy = fecha.getFullYear();
+            const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+            const dd = String(fecha.getDate()).padStart(2, '0');
+            fechaDocInput.value = `${yyyy}-${mm}-${dd}`;
+        }
+    });
+
+    fechaDocInput.addEventListener('input', () => {
+        fechaDocInput.dataset.manual = '1';
+    });
 }
 </script>
 </body>

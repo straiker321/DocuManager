@@ -90,7 +90,7 @@ function colorAccion($accion) {
             <h1>Historial de actividad</h1>
             <p>
                 <?php if($documento): ?>
-                    Cambios del documento: <strong><?= htmlspecialchars($documento['titulo']) ?></strong>
+                    Cambios del documento: <strong><?= htmlspecialchars(docValue($documento, 'titulo') ?? '') ?></strong>
                 <?php else: ?>
                     Últimas 20 actividades del sistema
                 <?php endif; ?>
@@ -126,7 +126,7 @@ function colorAccion($accion) {
                         </span>
                         <span class="timeline-fecha">
                             <?php
-                            $fecha = $a['createdAt'] ?? '';
+                            $fecha = fieldValue($a, 'createdAt', 'created_at') ?? '';
                             if ($fecha) {
                                 $dt = new DateTime($fecha);
                                 echo $dt->format('d/m/Y H:i');
@@ -138,13 +138,13 @@ function colorAccion($accion) {
                         <?= htmlspecialchars($a['descripcion'] ?? '') ?>
                     </div>
                     <div class="timeline-meta">
-                        <?php if($a['documentoId'] && !$docId): ?>
-                        Doc #<?= $a['documentoId'] ?> &nbsp;·&nbsp;
-                        <a href="?doc=<?= $a['documentoId'] ?>"
+                        <?php if(fieldValue($a, 'documentoId', 'documento_id') && !$docId): ?>
+                        Doc #<?= fieldValue($a, 'documentoId', 'documento_id') ?> &nbsp;·&nbsp;
+                        <a href="?doc=<?= fieldValue($a, 'documentoId', 'documento_id') ?>"
                            style="color:var(--accent)">Ver historial del documento</a>
                         <?php endif; ?>
-                        <?php if($a['usuarioId']): ?>
-                        &nbsp;· Usuario #<?= $a['usuarioId'] ?>
+                        <?php if(fieldValue($a, 'usuarioId', 'usuario_id')): ?>
+                        &nbsp;· Usuario #<?= fieldValue($a, 'usuarioId', 'usuario_id') ?>
                         <?php endif; ?>
                     </div>
                 </div>

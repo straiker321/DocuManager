@@ -20,7 +20,7 @@ $documentos = $res['data'] ?? [];
 $cats    = api('GET', '/categorias');
 $catMap  = [];
 foreach (($cats['data'] ?? []) as $c) {
-    $catMap[$c['id']] = $c['nombre'];
+    $catMap[fieldValue($c, 'id')] = fieldValue($c, 'nombre');
 }
 
 // URL de descarga Java
@@ -149,7 +149,7 @@ if (!empty($params)) $urlExcel .= '?' . http_build_query($params);
                 <label>Estado</label>
                 <select name="estado" class="form-control">
                     <option value="">Todos</option>
-                    <?php foreach(['BORRADOR','REVISION','PUBLICADO','ARCHIVADO'] as $e): ?>
+                    <?php foreach(['BORRADOR','PUBLICADO','ARCHIVADO'] as $e): ?>
                     <option value="<?=$e?>" <?= $estadoFil===$e?'selected':'' ?>><?=$e?></option>
                     <?php endforeach; ?>
                 </select>
@@ -158,7 +158,7 @@ if (!empty($params)) $urlExcel .= '?' . http_build_query($params);
                 <label>Tipo</label>
                 <select name="tipo" class="form-control">
                     <option value="">Todos</option>
-                    <?php foreach(['CONTRATO','FACTURA','REPORTE','MANUAL','FORMULARIO','ACUERDO','MEMORANDO','OFICIO','OTRO'] as $t): ?>
+                    <?php foreach(['CONTRATO','FACTURA','REPORTE','FORMULARIO','MANUAL','PDF_ESCANEADO','ACUERDO','OTRO'] as $t): ?>
                     <option value="<?=$t?>" <?= $tipoFil===$t?'selected':'' ?>><?=$t?></option>
                     <?php endforeach; ?>
                 </select>
@@ -205,24 +205,24 @@ if (!empty($params)) $urlExcel .= '?' . http_build_query($params);
                 <tbody>
                 <?php foreach($documentos as $d): ?>
                 <tr>
-                    <td style="color:var(--text-3)"><?= $d['id'] ?></td>
+                    <td style="color:var(--text-3)"><?= docValue($d, 'id') ?></td>
                     <td>
-                        <strong><?= htmlspecialchars($d['titulo']) ?></strong>
-                        <?php if($d['confidencial'] ?? false): ?>
+                        <strong><?= htmlspecialchars(docValue($d, 'titulo') ?? '') ?></strong>
+                        <?php if((bool)(docValue($d, 'confidencial') ?? false)): ?>
                         <span style="color:var(--warning)"> 🔒</span>
                         <?php endif; ?>
                     </td>
-                    <td><?= htmlspecialchars($d['tipo'] ?? '-') ?></td>
+                    <td><?= htmlspecialchars(docValue($d, 'tipo') ?? '-') ?></td>
                     <td>
-                        <span class="badge badge-<?= strtolower($d['estado'] ?? 'borrador') ?>">
-                            <?= $d['estado'] ?? 'BORRADOR' ?>
+                        <span class="badge badge-<?= strtolower(docValue($d, 'estado') ?? 'borrador') ?>">
+                            <?= docValue($d, 'estado') ?? 'BORRADOR' ?>
                         </span>
                     </td>
-                    <td><?= htmlspecialchars($d['cliente'] ?? '-') ?></td>
-                    <td><?= htmlspecialchars($catMap[$d['categoriaId'] ?? 0] ?? '-') ?></td>
-                    <td><?= !empty($d['fechaDoc']) ? date('d/m/Y', strtotime($d['fechaDoc'])) : '-' ?></td>
-                    <td><?= ($d['confidencial'] ?? false) ? '🔒 Sí' : 'No' ?></td>
-                    <td><?= $d['vistas'] ?? 0 ?></td>
+                    <td><?= htmlspecialchars(docValue($d, 'cliente') ?? '-') ?></td>
+                    <td><?= htmlspecialchars($catMap[docValue($d, 'categoria') ?? 0] ?? '-') ?></td>
+                    <td><?= ($fechaDocFila = docValue($d, 'fecha')) ? date('d/m/Y', strtotime($fechaDocFila)) : '-' ?></td>
+                    <td><?= (docValue($d, 'confidencial') ?? false) ? '🔒 Sí' : 'No' ?></td>
+                    <td><?= (int)(docValue($d, 'vistas') ?? 0) ?></td>
                 </tr>
                 <?php endforeach; ?>
                 </tbody>

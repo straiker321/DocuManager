@@ -52,6 +52,28 @@ function api($method, $endpoint, $data = null) {
     ];
 }
 
+
+function fieldValue(array $row, string ...$keys) {
+    foreach ($keys as $key) {
+        if (array_key_exists($key, $row) && $row[$key] !== null) {
+            return $row[$key];
+        }
+    }
+    return null;
+}
+
+function docValue(array $doc, string $field) {
+    return match($field) {
+        'categoria' => fieldValue($doc, 'categoriaId', 'categoria_id'),
+        'fecha' => fieldValue($doc, 'fechaDoc', 'fecha_doc'),
+        'archivoNombre' => fieldValue($doc, 'archivoNombre', 'archivo_nombre'),
+        'archivoRuta' => fieldValue($doc, 'archivoRuta', 'archivo_ruta'),
+        'archivoTipo' => fieldValue($doc, 'archivoTipo', 'archivo_tipo'),
+        'archivoTamano' => fieldValue($doc, 'archivoTamano', 'archivo_tamano'),
+        default => fieldValue($doc, $field, strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $field)))
+    };
+}
+
 function requireLogin() {
     if (!isset($_SESSION['token'])) {
         header('Location: /documanager/index.php');

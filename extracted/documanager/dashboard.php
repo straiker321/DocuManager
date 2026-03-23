@@ -3,6 +3,7 @@ require_once 'includes/config.php';
 requireLogin();
 
 $backendStatus = null;
+$viewerMode = !isEditor();
 
 // Obtener todos los documentos
 $docsRes    = api('GET', '/documentos');
@@ -14,20 +15,24 @@ if (!is_array($docs)) {
 
 // Calcular estadísticas manualmente
 $total      = count($docs);
-$publicados = count(array_filter($docs, fn($d) => ($d['estado'] ?? '') === 'PUBLICADO'));
-$borradores = count(array_filter($docs, fn($d) => ($d['estado'] ?? '') === 'BORRADOR'));
-$revision   = count(array_filter($docs, fn($d) => ($d['estado'] ?? '') === 'REVISION'));
-$archivados = count(array_filter($docs, fn($d) => ($d['estado'] ?? '') === 'ARCHIVADO'));
-$conArchivo    = count(array_filter($docs, fn($d) => !empty($d['archivoNombre'])));
-$confidenciales= count(array_filter($docs, fn($d) => !empty($d['confidencial'])));
+$publicados = count(array_filter($docs, fn($d) => (docValue($d, 'estado') ?? '') === 'PUBLICADO'));
+$borradores = count(array_filter($docs, fn($d) => (docValue($d, 'estado') ?? '') === 'BORRADOR'));
+$revision   = 0;
+$archivados = count(array_filter($docs, fn($d) => (docValue($d, 'estado') ?? '') === 'ARCHIVADO'));
+$conArchivo    = count(array_filter($docs, fn($d) => !empty(docValue($d, 'archivoNombre'))));
+$confidenciales= count(array_filter($docs, fn($d) => !empty(docValue($d, 'confidencial'))));
 
 // Más vistos (top 5 publicados)
-$masVistos = array_filter($docs, fn($d) => ($d['estado'] ?? '') === 'PUBLICADO');
-usort($masVistos, fn($a,$b) => ($b['vistas'] ?? 0) - ($a['vistas'] ?? 0));
+$masVistos = array_filter($docs, fn($d) => (docValue($d, 'estado') ?? '') === 'PUBLICADO');
+usort($masVistos, fn($a,$b) => (docValue($b, 'vistas') ?? 0) - (docValue($a, 'vistas') ?? 0));
 $masVistos = array_slice(array_values($masVistos), 0, 5);
+
+$docsPublicados = array_values(array_filter($docs, fn($d) => (docValue($d, 'estado') ?? '') === 'PUBLICADO'));
+$viewerConArchivo = count(array_filter($docsPublicados, fn($d) => !empty(docValue($d, 'archivoNombre'))));
 
 // Últimos 6
 $ultimos = array_slice(array_reverse($docs), 0, 6);
+$ultimosPublicados = array_slice(array_reverse($docsPublicados), 0, 6);
 
 // Categorías
 $catsRes    = api('GET', '/categorias');
@@ -114,8 +119,22 @@ function iconAccion($accion) {
             font-size: 0.78rem; color: var(--text-2); margin: 3px;
         }
         .cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .viewer-shell { display:grid; grid-template-columns: 1.35fr 0.95fr; gap:1.25rem; margin-bottom:1.25rem; }
+        .viewer-hero { padding: 1.75rem; position: relative; overflow:hidden; }
+        .viewer-hero::after { content:''; position:absolute; inset:auto -40px -60px auto; width:180px; height:180px; background:radial-gradient(circle, var(--accent-soft) 0%, transparent 70%); border-radius:50%; }
+        .viewer-hero h3 { font-size:1.4rem; margin-bottom:0.4rem; }
+        .viewer-hero p { color:var(--text-2); max-width:560px; }
+        .viewer-actions, .viewer-points { display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem; }
+        .viewer-pill { display:inline-flex; align-items:center; gap:8px; padding:7px 12px; border-radius:999px; background:var(--bg-hover); border:1px solid var(--border); color:var(--text-2); font-size:0.8rem; }
+        .viewer-side h3 { font-size:0.95rem; margin-bottom:0.35rem; }
+        .viewer-side p { color:var(--text-2); font-size:0.82rem; margin-bottom:1rem; }
+        .viewer-list { display:grid; gap:0.75rem; }
+        .viewer-item { padding:0.9rem 1rem; border-radius:var(--radius-sm); background:var(--bg-surface); border:1px solid var(--border); }
+        .viewer-item strong { display:block; margin-bottom:4px; }
+        .viewer-item span { color:var(--text-2); font-size:0.78rem; }
 
         @media(max-width:900px) {
+            .viewer-shell { grid-template-columns: 1fr; }
             .two-col, .three-col { grid-template-columns: 1fr; }
         }
     </style>
@@ -136,25 +155,147 @@ function iconAccion($accion) {
     <div class="welcome-banner" style="margin-bottom:1.5rem">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
             <div>
-                <h2>Bienvenido, <?= htmlspecialchars($_SESSION['nombre']) ?> 👋</h2>
-                <p><?= date('l d \d\e F \d\e Y') ?> &nbsp;·&nbsp;
-                   Sesión activa como <strong><?= $_SESSION['rol'] ?></strong></p>
+                <h2><?= $viewerMode ? 'Tu espacio documental' : 'Bienvenido, ' . htmlspecialchars($_SESSION['nombre']) . ' 👋' ?></h2>
+                <p>
+                    <?= date('l d \d\e F \d\e Y') ?> &nbsp;·&nbsp;
+                    <?php if($viewerMode): ?>
+                        Acceso en modo consulta con documentos publicados y accesos rápidos.
+                    <?php else: ?>
+                        Sesión activa como <strong><?= $_SESSION['rol'] ?></strong>
+                    <?php endif; ?>
+                </p>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
                 <?php if(isEditor()): ?>
-                <a href="/documanager/documentos.php" class="btn btn-primary btn-sm">
-                    + Nuevo documento
-                </a>
+                <a href="/documanager/documentos.php" class="btn btn-primary btn-sm">+ Nuevo documento</a>
+                <a href="/documanager/exportar.php" class="btn btn-secondary btn-sm">📊 Exportar Excel</a>
                 <?php endif; ?>
-                <a href="/documanager/exportar.php" class="btn btn-secondary btn-sm">
-                    📊 Exportar Excel
-                </a>
-                <a href="/documanager/historial.php" class="btn btn-secondary btn-sm">
-                    📋 Ver historial
-                </a>
+                <a href="/documanager/historial.php" class="btn btn-secondary btn-sm">📋 Ver historial</a>
             </div>
         </div>
     </div>
+
+    <?php if($viewerMode): ?>
+    <div class="stats-grid" style="margin-bottom:1.5rem">
+        <div class="stat-card green">
+            <div class="stat-num"><?= count($docsPublicados) ?></div>
+            <div class="stat-label">Documentos disponibles</div>
+        </div>
+        <div class="stat-card blue">
+            <div class="stat-num"><?= $viewerConArchivo ?></div>
+            <div class="stat-label">Con descarga disponible</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num"><?= $totalCats ?></div>
+            <div class="stat-label">Categorías visibles</div>
+        </div>
+    </div>
+
+    <div class="viewer-shell">
+        <div class="card viewer-hero">
+            <h3>Consulta rápida sin herramientas de administración</h3>
+            <p>Este panel fue simplificado para usuarios de consulta. Aquí ves solo lo necesario: documentos publicados, descargas disponibles e historial reciente.</p>
+            <div class="viewer-actions">
+                <a href="/documanager/documentos.php?estado=PUBLICADO" class="btn btn-primary">Ver documentos publicados</a>
+                <a href="/documanager/historial.php" class="btn btn-secondary">Abrir historial</a>
+            </div>
+            <div class="viewer-points">
+                <span class="viewer-pill">👁️ Solo lectura</span>
+                <span class="viewer-pill">📎 Descargas directas</span>
+                <span class="viewer-pill">🔎 Búsqueda rápida</span>
+            </div>
+        </div>
+
+        <div class="card viewer-side">
+            <h3>Qué puedes hacer</h3>
+            <p>Tu perfil actual está enfocado en consulta. Eliminé avisos repetitivos para que la vista se sienta más limpia.</p>
+            <div class="viewer-list">
+                <div class="viewer-item"><strong>Buscar documentos</strong><span>Usa filtros por estado, cliente, categoría o fecha.</span></div>
+                <div class="viewer-item"><strong>Descargar archivos</strong><span>Abre documentos con archivo adjunto desde la tabla.</span></div>
+                <div class="viewer-item"><strong>Revisar cambios</strong><span>Consulta el historial reciente del sistema o por documento.</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="two-col" style="margin-bottom:1.25rem">
+
+        <!-- Últimos documentos -->
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+                <p class="section-label" style="margin:0"><?= $viewerMode ? 'Documentos publicados recientes' : 'Últimos documentos' ?></p>
+                <a href="/documanager/documentos.php" style="font-size:0.78rem;color:var(--accent)">Ver todos →</a>
+            </div>
+            <?php $docsTabla = $viewerMode ? $ultimosPublicados : $ultimos; ?>
+            <?php if(empty($docsTabla)): ?>
+            <div class="empty" style="padding:2rem"><p>No hay documentos aún</p></div>
+            <?php else: ?>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Título</th><th>Tipo</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach($docsTabla as $d): ?>
+                    <tr>
+                        <td>
+                            <strong><?= htmlspecialchars(docValue($d, 'titulo') ?? '') ?></strong>
+                            <?php if(!empty(docValue($d, 'confidencial'))): ?>
+                            <span style="color:var(--warning)"> 🔒</span>
+                            <?php endif; ?>
+                        </td>
+                        <td style="font-size:0.78rem"><?= htmlspecialchars(docValue($d, 'tipo') ?? '-') ?></td>
+                        <td>
+                            <span class="badge badge-<?= strtolower(docValue($d, 'estado') ?? 'borrador') ?>">
+                                <?= docValue($d, 'estado') ?? 'BORRADOR' ?>
+                            </span>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Actividad reciente -->
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+                <p class="section-label" style="margin:0">Actividad reciente</p>
+                <a href="/documanager/historial.php" style="font-size:0.78rem;color:var(--accent)">Ver todo →</a>
+            </div>
+            <?php if(empty($actividad)): ?>
+            <div class="empty" style="padding:2rem"><p>No hay actividad registrada</p></div>
+            <?php else: ?>
+            <?php foreach(array_slice($actividad, 0, 6) as $a): ?>
+            <div class="activity-item">
+                <div class="activity-icon"><?= iconAccion($a['accion'] ?? '') ?></div>
+                <div>
+                    <div class="activity-desc"><?= htmlspecialchars($a['descripcion'] ?? '') ?></div>
+                    <div class="activity-time">
+                        <?php
+                        if ($fechaAct = fieldValue($a, 'createdAt', 'created_at')) {
+                            try {
+                                $dt = new DateTime($fechaAct);
+                                echo $dt->format('d/m/Y H:i');
+                            } catch(Exception $e) {
+                                echo $fechaAct;
+                            }
+                        }
+                        ?>
+                        <?php if(fieldValue($a, 'documentoId', 'documento_id')): ?>
+                        &nbsp;·&nbsp;
+                        <a href="/documanager/historial.php?doc=<?= fieldValue($a, 'documentoId', 'documento_id') ?>"
+                           style="color:var(--accent)">Doc #<?= fieldValue($a, 'documentoId', 'documento_id') ?></a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?php else: ?>
 
     <!-- Stats principales -->
     <div class="stats-grid" style="margin-bottom:1.5rem">
@@ -223,15 +364,15 @@ function iconAccion($accion) {
                     <?php foreach($ultimos as $d): ?>
                     <tr>
                         <td>
-                            <strong><?= htmlspecialchars($d['titulo'] ?? '') ?></strong>
-                            <?php if(!empty($d['confidencial'])): ?>
+                            <strong><?= htmlspecialchars(docValue($d, 'titulo') ?? '') ?></strong>
+                            <?php if(!empty(docValue($d, 'confidencial'))): ?>
                             <span style="color:var(--warning)"> 🔒</span>
                             <?php endif; ?>
                         </td>
-                        <td style="font-size:0.78rem"><?= htmlspecialchars($d['tipo'] ?? '-') ?></td>
+                        <td style="font-size:0.78rem"><?= htmlspecialchars(docValue($d, 'tipo') ?? '-') ?></td>
                         <td>
-                            <span class="badge badge-<?= strtolower($d['estado'] ?? 'borrador') ?>">
-                                <?= $d['estado'] ?? 'BORRADOR' ?>
+                            <span class="badge badge-<?= strtolower(docValue($d, 'estado') ?? 'borrador') ?>">
+                                <?= docValue($d, 'estado') ?? 'BORRADOR' ?>
                             </span>
                         </td>
                     </tr>
@@ -258,19 +399,19 @@ function iconAccion($accion) {
                     <div class="activity-desc"><?= htmlspecialchars($a['descripcion'] ?? '') ?></div>
                     <div class="activity-time">
                         <?php
-                        if (!empty($a['createdAt'])) {
+                        if ($fechaAct = fieldValue($a, 'createdAt', 'created_at')) {
                             try {
-                                $dt = new DateTime($a['createdAt']);
+                                $dt = new DateTime($fechaAct);
                                 echo $dt->format('d/m/Y H:i');
                             } catch(Exception $e) {
-                                echo $a['createdAt'];
+                                echo $fechaAct;
                             }
                         }
                         ?>
-                        <?php if(!empty($a['documentoId'])): ?>
+                        <?php if(fieldValue($a, 'documentoId', 'documento_id')): ?>
                         &nbsp;·&nbsp;
-                        <a href="/documanager/historial.php?doc=<?= $a['documentoId'] ?>"
-                           style="color:var(--accent)">Doc #<?= $a['documentoId'] ?></a>
+                        <a href="/documanager/historial.php?doc=<?= fieldValue($a, 'documentoId', 'documento_id') ?>"
+                           style="color:var(--accent)">Doc #<?= fieldValue($a, 'documentoId', 'documento_id') ?></a>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -290,8 +431,7 @@ function iconAccion($accion) {
             $estados = [
                 'PUBLICADO' => [$publicados, '#10b981'],
                 'BORRADOR'  => [$borradores, '#94a3b8'],
-                'REVISIÓN'  => [$revision,   '#f59e0b'],
-                'ARCHIVADO' => [$archivados,  '#ef4444'],
+                                'ARCHIVADO' => [$archivados,  '#ef4444'],
             ];
             foreach($estados as $nombre => [$cantidad, $color]):
                 $pct = $total > 0 ? round(($cantidad / $total) * 100) : 0;
@@ -328,7 +468,7 @@ function iconAccion($accion) {
                     <tbody>
                     <?php foreach($masVistos as $d): ?>
                     <tr>
-                        <td><strong><?= htmlspecialchars($d['titulo'] ?? '') ?></strong></td>
+                        <td><strong><?= htmlspecialchars(docValue($d, 'titulo') ?? '') ?></strong></td>
                         <td><?= (int)($d['vistas'] ?? 0) ?></td>
                     </tr>
                     <?php endforeach; ?>
@@ -362,11 +502,7 @@ function iconAccion($accion) {
             <div style="border-top:1px solid var(--border);padding-top:1rem">
                 <p class="section-label">Accesos rápidos</p>
                 <div style="display:flex;flex-direction:column;gap:6px">
-                    <a href="/documanager/documentos.php?estado=REVISION" class="quick-link">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        En revisión (<?= $revision ?>)
-                    </a>
-                    <a href="/documanager/documentos.php?estado=BORRADOR" class="quick-link">
+                                        <a href="/documanager/documentos.php?estado=BORRADOR" class="quick-link">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/></svg>
                         Borradores (<?= $borradores ?>)
                     </a>
@@ -383,6 +519,8 @@ function iconAccion($accion) {
         </div>
 
     </div>
+
+    <?php endif; ?>
 
 </div>
 </div>
