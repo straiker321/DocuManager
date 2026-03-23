@@ -303,8 +303,12 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
                     <td><?= (int)(docValue($d, 'vistas') ?? 0) ?></td>
                     <td>
                         <?php if(docValue($d, 'archivoNombre')): ?>
-                        <a href="http://localhost:8080/archivos/descargar/<?= docValue($d, 'id') ?>"
-                           class="btn btn-success btn-sm" target="_blank">⬇️ Descargar</a>
+                        <div style="display:flex;gap:5px;flex-wrap:wrap">
+                            <a href="/documanager/ver_documento.php?id=<?= docValue($d, 'id') ?>"
+                               class="btn btn-secondary btn-sm">Ver detalles</a>
+                            <a href="http://localhost:8080/archivos/descargar/<?= docValue($d, 'id') ?>"
+                               class="btn btn-success btn-sm" target="_blank">⬇️ Descargar</a>
+                        </div>
                         <?php else: ?>
                         <span style="color:var(--text-3);font-size:0.78rem">Sin archivo</span>
                         <?php endif; ?>
