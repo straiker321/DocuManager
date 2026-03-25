@@ -64,7 +64,13 @@ function fieldValue(array $row, string ...$keys) {
 
 function docValue(array $doc, string $field) {
     return match($field) {
-        'categoria' => fieldValue($doc, 'categoriaId', 'categoria_id'),
+        'categoria' => (function() use ($doc) {
+            $categoria = fieldValue($doc, 'categoriaId', 'categoria_id', 'categoria');
+            if (is_array($categoria)) {
+                return fieldValue($categoria, 'id', 'categoria_id');
+            }
+            return $categoria;
+        })(),
         'fecha' => fieldValue($doc, 'fechaDoc', 'fecha_doc'),
         'archivoNombre' => fieldValue($doc, 'archivoNombre', 'archivo_nombre'),
         'archivoRuta' => fieldValue($doc, 'archivoRuta', 'archivo_ruta'),

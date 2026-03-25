@@ -22,7 +22,9 @@ $extension = strtolower(pathinfo((string)$archivoNombre, PATHINFO_EXTENSION));
 
 $esPdf = $archivoTipo === 'application/pdf' || $extension === 'pdf';
 $esImagen = str_starts_with($archivoTipo, 'image/') || in_array($extension, ['png','jpg','jpeg','gif','webp'], true);
-$previewInline = $esPdf || $esImagen;
+$esOffice = in_array($extension, ['doc','docx','xls','xlsx','xlsm','csv'], true);
+$archivoUrlEncoded = rawurlencode($archivoUrl);
+$officeViewerUrl = 'https://view.officeapps.live.com/op/embed.aspx?src=' . $archivoUrlEncoded;
 
 $cats = api('GET', '/categorias');
 $nombreCategoria = '-';
@@ -96,11 +98,13 @@ foreach (($cats['data'] ?? []) as $cat) {
                 <iframe class="preview-frame" src="<?= htmlspecialchars($archivoUrl) ?>#toolbar=1"></iframe>
             <?php elseif($esImagen): ?>
                 <img class="preview-image" src="<?= htmlspecialchars($archivoUrl) ?>" alt="Vista previa del documento">
+            <?php elseif($esOffice): ?>
+                <iframe class="preview-frame" src="<?= htmlspecialchars($officeViewerUrl) ?>"></iframe>
             <?php else: ?>
                 <div class="preview-empty">
                     <h3 style="margin-bottom:8px">Vista previa no disponible</h3>
                     <p>Este tipo de archivo no se puede incrustar directamente en el navegador.</p>
-                    <p style="margin-top:10px">Puedes descargarlo para abrirlo en Word, Excel u otra aplicación.</p>
+                    <p style="margin-top:10px">Para Word/Excel usamos visor web; si tu servidor es local (localhost), puede que no cargue y debas descargar el archivo.</p>
                     <a href="<?= htmlspecialchars($archivoUrl) ?>" class="btn btn-success" target="_blank" style="margin-top:12px">Descargar archivo</a>
                 </div>
             <?php endif; ?>

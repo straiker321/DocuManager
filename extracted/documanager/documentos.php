@@ -25,16 +25,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['_action'])) {
             $fechaDoc = date('Y-m-d');
         }
 
+        $categoriaSeleccionada = (isset($_POST['categoriaId']) && $_POST['categoriaId'] !== '') ? (int)$_POST['categoriaId'] : null;
         $data = [
-            'titulo'      => trim($_POST['titulo'] ?? ''),
-            'descripcion' => trim($_POST['descripcion'] ?? ''),
-            'tipo'        => $_POST['tipo'] ?? '',
-            'estado'      => $_POST['estado'] ?? 'BORRADOR',
-            'categoriaId' => $_POST['categoriaId'] ? (int)$_POST['categoriaId'] : null,
-            'cliente'     => trim($_POST['cliente'] ?? ''),
-            'fechaDoc'    => $fechaDoc !== '' ? $fechaDoc : null,
-            'etiquetas'   => trim($_POST['etiquetas'] ?? ''),
-            'confidencial'=> isset($_POST['confidencial']),
+            'titulo'       => trim($_POST['titulo'] ?? ''),
+            'descripcion'  => trim($_POST['descripcion'] ?? ''),
+            'tipo'         => $_POST['tipo'] ?? '',
+            'estado'       => $_POST['estado'] ?? 'BORRADOR',
+            // enviar ambas claves para compatibilidad (camelCase y snake_case)
+            'categoriaId'  => $categoriaSeleccionada,
+            'categoria_id' => $categoriaSeleccionada,
+            'cliente'      => trim($_POST['cliente'] ?? ''),
+            'fechaDoc'     => $fechaDoc !== '' ? $fechaDoc : null,
+            'etiquetas'    => trim($_POST['etiquetas'] ?? ''),
+            'confidencial' => isset($_POST['confidencial']),
         ];
 
         if ($action === 'crear') {
@@ -90,7 +93,7 @@ if ($buscar)     $params['buscar']      = $buscar;
 if ($tipoFil)    $params['tipo']        = $tipoFil;
 if ($estadoFil)  $params['estado']      = $estadoFil;
 if ($clienteFil) $params['cliente']     = $clienteFil;
-if ($catFil)     $params['categoriaId'] = $catFil;
+if ($catFil) { $params['categoriaId'] = $catFil; $params['categoria_id'] = $catFil; }
 if ($fechaDesde) $params['fechaDesde']  = $fechaDesde;
 if ($fechaHasta) $params['fechaHasta']  = $fechaHasta;
 
