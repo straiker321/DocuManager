@@ -1,9 +1,9 @@
 <?php
 require_once 'includes/config.php';
-requireLogin();
+requireAdmin();
 
 $backendStatus = null;
-$viewerMode = !isEditor();
+$viewerMode = false;
 
 // Obtener todos los documentos
 $docsRes    = api('GET', '/documentos');

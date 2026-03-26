@@ -1,7 +1,8 @@
 <?php
 require_once 'includes/config.php';
 if (isset($_SESSION['token'])) {
-    header('Location: /documanager/dashboard.php'); exit;
+    $dest = (($_SESSION['rol'] ?? '') === 'ADMIN') ? '/documanager/dashboard.php' : '/documanager/documentos.php';
+    header('Location: ' . $dest); exit;
 }
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -14,7 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['nombre'] = $res['data']['nombre'];
             $_SESSION['email']  = $res['data']['email'];
             $_SESSION['rol']    = $res['data']['rol'];
-            header('Location: /documanager/dashboard.php'); exit;
+            $dest = (($_SESSION['rol'] ?? '') === 'ADMIN') ? '/documanager/dashboard.php' : '/documanager/documentos.php';
+            header('Location: ' . $dest); exit;
         } else {
             $error = $res['data']['message'] ?? 'Credenciales incorrectas. Verifica tu email y contraseña.';
         }
