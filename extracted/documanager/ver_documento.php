@@ -26,6 +26,10 @@ $esOffice = in_array($extension, ['doc','docx','xls','xlsx','xlsm','csv'], true)
 $archivoUrlEncoded = rawurlencode($archivoUrl);
 $officeViewerUrl = 'https://view.officeapps.live.com/op/embed.aspx?src=' . $archivoUrlEncoded;
 
+$host = strtolower((string)parse_url($archivoUrl, PHP_URL_HOST));
+$esHostLocal = in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+$usarOfficeEmbed = $esOffice && !$esHostLocal;
+
 $cats = api('GET', '/categorias');
 $nombreCategoria = '-';
 foreach (($cats['data'] ?? []) as $cat) {
@@ -98,8 +102,15 @@ foreach (($cats['data'] ?? []) as $cat) {
                 <iframe class="preview-frame" src="<?= htmlspecialchars($archivoUrl) ?>#toolbar=1"></iframe>
             <?php elseif($esImagen): ?>
                 <img class="preview-image" src="<?= htmlspecialchars($archivoUrl) ?>" alt="Vista previa del documento">
-            <?php elseif($esOffice): ?>
+            <?php elseif($usarOfficeEmbed): ?>
                 <iframe class="preview-frame" src="<?= htmlspecialchars($officeViewerUrl) ?>"></iframe>
+            <?php elseif($esOffice): ?>
+                <div class="preview-empty">
+                    <h3 style="margin-bottom:8px">Vista previa de Word/Excel no disponible en local</h3>
+                    <p>El visor web de Office requiere una URL pública del archivo.</p>
+                    <p style="margin-top:10px">Como tu sistema está en <strong>localhost</strong>, debes abrirlo con el botón de descarga.</p>
+                    <a href="<?= htmlspecialchars($archivoUrl) ?>" class="btn btn-success" target="_blank" style="margin-top:12px">Descargar archivo</a>
+                </div>
             <?php else: ?>
                 <div class="preview-empty">
                     <h3 style="margin-bottom:8px">Vista previa no disponible</h3>
