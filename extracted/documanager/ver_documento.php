@@ -105,11 +105,11 @@ foreach (($cats['data'] ?? []) as $cat) {
             <?php elseif($usarOfficeEmbed): ?>
                 <iframe class="preview-frame" src="<?= htmlspecialchars($officeViewerUrl) ?>"></iframe>
             <?php elseif($esOffice): ?>
-                <div class="preview-empty">
-                    <h3 style="margin-bottom:8px">Vista previa de Word/Excel no disponible en local</h3>
-                    <p>El visor web de Office requiere una URL pública del archivo.</p>
-                    <p style="margin-top:10px">Como tu sistema está en <strong>localhost</strong>, debes abrirlo con el botón de descarga.</p>
-                    <a href="<?= htmlspecialchars($archivoUrl) ?>" class="btn btn-success" target="_blank" style="margin-top:12px">Descargar archivo</a>
+                <div class="preview-empty" id="officePreviewContainer"
+                     data-file-url="<?= htmlspecialchars($archivoUrl) ?>"
+                     data-extension="<?= htmlspecialchars($extension) ?>">
+                    <h3 style="margin-bottom:8px">Cargando vista previa…</h3>
+                    <p>Estamos procesando el archivo para mostrarlo dentro del sistema.</p>
                 </div>
             <?php else: ?>
                 <div class="preview-empty">
@@ -124,5 +124,60 @@ foreach (($cats['data'] ?? []) as $cat) {
 
 </div>
 </div>
+
+<?php if($esOffice && $esHostLocal): ?>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+(async function() {
+    const box = document.getElementById('officePreviewContainer');
+    if (!box) return;
+
+    const fileUrl = box.dataset.fileUrl;
+    const ext = (box.dataset.extension || '').toLowerCase();
+
+    const setError = (title, msg) => {
+        box.innerHTML = `
+            <h3 style="margin-bottom:8px">${title}</h3>
+            <p>${msg}</p>
+            <a href="${fileUrl}" class="btn btn-success" target="_blank" style="margin-top:12px">Descargar archivo</a>
+        `;
+    };
+
+    try {
+        const res = await fetch(fileUrl);
+        if (!res.ok) {
+            setError('No se pudo cargar el archivo', 'El archivo no respondió correctamente desde el servidor.');
+            return;
+        }
+
+        if (ext === 'docx') {
+            const arrayBuffer = await res.arrayBuffer();
+            const result = await mammoth.convertToHtml({ arrayBuffer });
+            box.innerHTML = `<div style="text-align:left;max-width:900px;max-height:68vh;overflow:auto;background:#fff;color:#111;padding:1.25rem;border-radius:10px">${result.value}</div>`;
+            return;
+        }
+
+        if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
+            const arrayBuffer = await res.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            if (!firstSheet) {
+                setError('No se encontró contenido', 'No fue posible leer hojas en el archivo de Excel.');
+                return;
+            }
+            const html = XLSX.utils.sheet_to_html(firstSheet);
+            box.innerHTML = `<div style="text-align:left;max-width:100%;max-height:68vh;overflow:auto;background:#fff;color:#111;padding:1rem;border-radius:10px">${html}</div>`;
+            return;
+        }
+
+        setError('Vista previa no disponible', 'Este formato requiere descarga para abrirse correctamente en tu equipo.');
+    } catch (e) {
+        setError('Error de visualización', 'No fue posible generar la vista previa local. Puedes descargar el archivo.');
+    }
+})();
+</script>
+<?php endif; ?>
+
 </body>
 </html>
