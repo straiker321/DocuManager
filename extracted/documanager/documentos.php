@@ -149,6 +149,21 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
             text-decoration: none; transition: all 0.15s;
         }
         .btn-excel:hover { background: rgba(16,185,129,0.2); }
+        .docs-table td { vertical-align: top; }
+        .docs-table .col-id { min-width: 56px; }
+        .docs-table .col-titulo { min-width: 220px; }
+        .docs-table .col-tipo { min-width: 140px; }
+        .docs-table .col-estado { min-width: 120px; }
+        .docs-table .col-cliente { min-width: 170px; }
+        .docs-table .col-fecha, .docs-table .col-vistas { min-width: 90px; }
+        .docs-table .col-archivo, .docs-table .col-historial, .docs-table .col-acciones { min-width: 170px; }
+        .row-actions, .archivo-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .single-action { display: inline-flex; }
     </style>
 </head>
 <body>
@@ -271,7 +286,7 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
         </div>
         <?php else: ?>
         <div class="table-wrap">
-            <table>
+            <table class="docs-table">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -289,8 +304,8 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
                 <tbody>
                 <?php foreach($documentos as $d): ?>
                 <tr>
-                    <td style="color:var(--text-3)"><?= docValue($d, 'id') ?></td>
-                    <td>
+                    <td class="col-id" style="color:var(--text-3)"><?= docValue($d, 'id') ?></td>
+                    <td class="col-titulo">
                         <strong><?= htmlspecialchars(docValue($d, 'titulo') ?? '') ?></strong>
                         <?php if((bool)(docValue($d, 'confidencial') ?? false)): ?>
                         <span style="color:var(--warning);margin-left:4px" title="Confidencial">🔒</span>
@@ -299,14 +314,14 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
                         <br><span style="font-size:0.72rem;color:var(--text-3)"><?= htmlspecialchars(docValue($d, 'etiquetas') ?? '') ?></span>
                         <?php endif; ?>
                     </td>
-                    <td><?= htmlspecialchars(docValue($d, 'tipo') ?? '-') ?></td>
-                    <td><span class="badge badge-<?= strtolower(docValue($d, 'estado') ?? 'borrador') ?>"><?= docValue($d, 'estado') ?? 'BORRADOR' ?></span></td>
-                    <td><?= htmlspecialchars(docValue($d, 'cliente') ?? '-') ?></td>
-                    <td><?= ($fechaDocFila = docValue($d, 'fecha')) ? date('d/m/Y', strtotime($fechaDocFila)) : '-' ?></td>
-                    <td><?= (int)(docValue($d, 'vistas') ?? 0) ?></td>
-                    <td>
+                    <td class="col-tipo"><?= htmlspecialchars(docValue($d, 'tipo') ?? '-') ?></td>
+                    <td class="col-estado"><span class="badge badge-<?= strtolower(docValue($d, 'estado') ?? 'borrador') ?>"><?= docValue($d, 'estado') ?? 'BORRADOR' ?></span></td>
+                    <td class="col-cliente"><?= htmlspecialchars(docValue($d, 'cliente') ?? '-') ?></td>
+                    <td class="col-fecha"><?= ($fechaDocFila = docValue($d, 'fecha')) ? date('d/m/Y', strtotime($fechaDocFila)) : '-' ?></td>
+                    <td class="col-vistas"><?= (int)(docValue($d, 'vistas') ?? 0) ?></td>
+                    <td class="col-archivo">
                         <?php if(docValue($d, 'archivoNombre')): ?>
-                        <div style="display:flex;gap:5px;flex-wrap:wrap">
+                        <div class="archivo-actions">
                             <a href="/documanager/ver_documento.php?id=<?= docValue($d, 'id') ?>"
                                class="btn btn-secondary btn-sm">Ver detalles</a>
                             <a href="http://localhost:8080/archivos/descargar/<?= docValue($d, 'id') ?>"
@@ -316,13 +331,13 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
                         <span style="color:var(--text-3);font-size:0.78rem">Sin archivo</span>
                         <?php endif; ?>
                     </td>
-                    <td>
+                    <td class="col-historial">
                         <a href="/documanager/historial.php?doc=<?= docValue($d, 'id') ?>"
-                           class="btn btn-secondary btn-sm" title="Ver historial">📋</a>
+                           class="btn btn-secondary btn-sm single-action" title="Ver historial">📋</a>
                     </td>
                     <?php if(isEditor()): ?>
-                    <td>
-                        <div style="display:flex;gap:5px">
+                    <td class="col-acciones">
+                        <div class="row-actions">
                             <a href="?edit=<?= docValue($d, 'id') ?>" class="btn btn-secondary btn-sm">Editar</a>
                             <?php if((docValue($d, 'estado') ?? '') !== 'ARCHIVADO'): ?>
                             <form method="POST" onsubmit="return confirm('¿Archivar este documento?')">
