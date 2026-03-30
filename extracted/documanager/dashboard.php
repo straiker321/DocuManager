@@ -121,7 +121,7 @@ function iconAccion($accion) {
         .cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .viewer-shell { display:grid; grid-template-columns: 1.35fr 0.95fr; gap:1.25rem; margin-bottom:1.25rem; }
         .viewer-hero { padding: 1.75rem; position: relative; overflow:hidden; }
-        .viewer-hero::after { content:''; position:absolute; inset:auto -40px -60px auto; width:180px; height:180px; background:radial-gradient(circle, var(--accent-soft) 0%, transparent 70%); border-radius:50%; }
+        .viewer-hero::after { content:''; position:absolute; inset:auto -40px -60px auto; width:180px; height:180px; background:radial-gradient(circle, var(--accent-soft) 0%, transparent 70%); border-radius:50%; pointer-events:none; }
         .viewer-hero h3 { font-size:1.4rem; margin-bottom:0.4rem; }
         .viewer-hero p { color:var(--text-2); max-width:560px; }
         .viewer-actions, .viewer-points { display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem; }
