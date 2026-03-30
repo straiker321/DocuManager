@@ -87,8 +87,14 @@ function requireLogin() {
     }
 }
 
-function isAdmin()  { return isset($_SESSION['rol']) && $_SESSION['rol'] === 'ADMIN'; }
-function isEditor() { return isset($_SESSION['rol']) && in_array($_SESSION['rol'], ['ADMIN','EDITOR']); }
+function currentRole(): string {
+    $rawRole = $_SESSION['rol'] ?? '';
+    $normalizedRole = strtoupper(trim((string)$rawRole));
+    return preg_replace('/^ROLE_/', '', $normalizedRole);
+}
+
+function isAdmin()  { return currentRole() === 'ADMIN'; }
+function isEditor() { return in_array(currentRole(), ['ADMIN','EDITOR'], true); }
 
 function requireAdmin() {
     requireLogin();
