@@ -5,7 +5,7 @@ requireLogin();
 $msg = $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['_action'])) {
-    if (!isEditor()) { $error = 'No tienes permisos para esta acción.'; goto show; }
+    if (!(isEditor() || isAdmin())) { $error = 'No tienes permisos para esta acción.'; goto show; }
 
     $id = (int)($_POST['id'] ?? 0);
     $action = $_POST['_action'] ?? '';
@@ -105,7 +105,8 @@ $cats       = api('GET', '/categorias');
 $categorias = $cats['data'] ?? [];
 
 $editDoc = null;
-if (isset($_GET['edit']) && isEditor()) {
+$canManage = isEditor() || isAdmin();
+if (isset($_GET['edit']) && $canManage) {
     $r       = api('GET', '/documentos/' . (int)$_GET['edit']);
     $editDoc = $r['data'] ?? null;
 }
@@ -182,7 +183,7 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Exportar Excel
             </a>
-            <?php if(isEditor()): ?>
+            <?php if($canManage): ?>
             <button class="btn btn-primary" onclick="openModal('modalDoc')">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Nuevo documento
@@ -298,7 +299,7 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
                         <th>Vistas</th>
                         <th>Archivo</th>
                         <th>Historial</th>
-                        <?php if(isEditor()): ?><th>Acciones</th><?php endif; ?>
+                        <?php if($canManage): ?><th>Acciones</th><?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -335,7 +336,7 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
                         <a href="/documanager/historial.php?doc=<?= docValue($d, 'id') ?>"
                            class="btn btn-secondary btn-sm single-action" title="Ver historial">📋</a>
                     </td>
-                    <?php if(isEditor()): ?>
+                    <?php if($canManage): ?>
                     <td class="col-acciones">
                         <div class="row-actions">
                             <a href="?edit=<?= docValue($d, 'id') ?>" class="btn btn-secondary btn-sm">Editar</a>
@@ -363,7 +364,7 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
 </div>
 </div>
 
-<?php if(isEditor()): ?>
+<?php if($canManage): ?>
 <!-- Modal Crear / Editar -->
 <div class="modal-overlay <?= $editDoc ? 'open' : '' ?>" id="modalDoc">
     <div class="modal">

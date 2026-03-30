@@ -99,11 +99,19 @@ function assetUrl(string $webPath): string {
 function currentRole(): string {
     $rawRole = $_SESSION['rol'] ?? '';
     $normalizedRole = strtoupper(trim((string)$rawRole));
-    return preg_replace('/^ROLE_/', '', $normalizedRole);
+    $withoutPrefix = preg_replace('/^ROLE_/', '', $normalizedRole);
+    return is_string($withoutPrefix) ? $withoutPrefix : $normalizedRole;
 }
 
-function isAdmin()  { return currentRole() === 'ADMIN'; }
-function isEditor() { return in_array(currentRole(), ['ADMIN','EDITOR'], true); }
+function isAdmin()  {
+    $role = currentRole();
+    return $role === 'ADMIN' || str_contains($role, 'ADMIN');
+}
+
+function isEditor() {
+    $role = currentRole();
+    return $role === 'EDITOR' || str_contains($role, 'EDITOR') || isAdmin();
+}
 
 function requireAdmin() {
     requireLogin();
