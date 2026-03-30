@@ -99,7 +99,13 @@ if ($fechaHasta) $params['fechaHasta']  = $fechaHasta;
 
 $endpoint   = '/documentos' . (!empty($params) ? '?' . http_build_query($params) : '');
 $docs       = api('GET', $endpoint);
-$documentos = $docs['data'] ?? [];
+$documentosRaw = is_array($docs['data'] ?? null) ? $docs['data'] : [];
+$isPresidente = isPresidente();
+$documentos = array_values(array_filter($documentosRaw, function($d) use ($isPresidente) {
+    $soloPresidente = (bool)(docValue((array)$d, 'confidencial') ?? false);
+    return $isPresidente || !$soloPresidente;
+}));
+$ocultosSoloPresidente = max(0, count($documentosRaw) - count($documentos));
 
 $cats       = api('GET', '/categorias');
 $categorias = $cats['data'] ?? [];
@@ -109,6 +115,10 @@ $canManage = isEditor() || isAdmin();
 if (isset($_GET['edit']) && $canManage) {
     $r       = api('GET', '/documentos/' . (int)$_GET['edit']);
     $editDoc = $r['data'] ?? null;
+    if (!$isPresidente && (bool)(docValue((array)$editDoc, 'confidencial') ?? false)) {
+        $editDoc = null;
+        $error = 'Este documento está marcado como solo visible para Presidencia.';
+    }
 }
 
 $hayFiltros = $buscar || $tipoFil || $estadoFil || $clienteFil || $catFil || $fechaDesde || $fechaHasta;
@@ -194,6 +204,9 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
 
     <?php if($msg): ?><div class="alert alert-success"><?= htmlspecialchars($msg) ?></div><?php endif; ?>
     <?php if($error): ?><div class="alert alert-error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
+    <?php if(!$isPresidente && $ocultosSoloPresidente > 0): ?>
+    <div class="alert alert-info">Hay <?= (int)$ocultosSoloPresidente ?> documento(s) restringido(s) para Presidencia que no se muestran en este listado.</div>
+    <?php endif; ?>
 
     <!-- Filtros -->
     <form method="GET" class="card <?= $hayFiltros ? 'filter-active' : '' ?>"
@@ -310,6 +323,7 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
                         <strong><?= htmlspecialchars(docValue($d, 'titulo') ?? '') ?></strong>
                         <?php if((bool)(docValue($d, 'confidencial') ?? false)): ?>
                         <span style="color:var(--warning);margin-left:4px" title="Confidencial">🔒</span>
+                        <span style="color:var(--warning);font-size:0.72rem;margin-left:4px">Solo Presidencia</span>
                         <?php endif; ?>
                         <?php if(!empty(docValue($d, 'etiquetas'))): ?>
                         <br><span style="font-size:0.72rem;color:var(--text-3)"><?= htmlspecialchars(docValue($d, 'etiquetas') ?? '') ?></span>
@@ -441,7 +455,7 @@ $estadosDocumento = ['BORRADOR','PUBLICADO','ARCHIVADO'];
             <div class="checkbox-row">
                 <input type="checkbox" name="confidencial" id="conf"
                        <?= (docValue($editDoc ?? [], 'confidencial') ?? false) ? 'checked' : '' ?>>
-                <label for="conf">🔒 Marcar como documento confidencial</label>
+                <label for="conf">👑 Solo Presidencia (el documento solo será visible para ese rol)</label>
             </div>
             <div class="form-group" style="margin-top:1rem">
                 <label>Archivo adjunto (PDF, Word, Excel, imágenes)</label>

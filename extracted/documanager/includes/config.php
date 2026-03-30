@@ -113,6 +113,21 @@ function isEditor() {
     return $role === 'EDITOR' || str_contains($role, 'EDITOR') || isAdmin();
 }
 
+function isPresidente() {
+    $role = currentRole();
+    if ($role === 'PRESIDENTE' || str_contains($role, 'PRESIDENTE') || str_contains($role, 'PRESIDENT')) {
+        return true;
+    }
+
+    $nombre = strtolower(trim((string)($_SESSION['nombre'] ?? '')));
+    $email = strtolower(trim((string)($_SESSION['email'] ?? '')));
+    if (str_contains($nombre, 'president') || str_contains($email, 'president')) {
+        return true;
+    }
+
+    return !empty($_SESSION['es_presidente']);
+}
+
 function requireAdmin() {
     requireLogin();
     if (!isAdmin()) {
