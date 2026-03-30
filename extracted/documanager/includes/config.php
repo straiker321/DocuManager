@@ -87,6 +87,15 @@ function requireLogin() {
     }
 }
 
+function assetUrl(string $webPath): string {
+    $baseDir = dirname(__DIR__);
+    $localPath = $baseDir . str_replace('/documanager', '', $webPath);
+    if (is_file($localPath)) {
+        return $webPath . '?v=' . filemtime($localPath);
+    }
+    return $webPath;
+}
+
 function currentRole(): string {
     $rawRole = $_SESSION['rol'] ?? '';
     $normalizedRole = strtoupper(trim((string)$rawRole));

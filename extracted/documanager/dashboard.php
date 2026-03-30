@@ -61,7 +61,7 @@ function iconAccion($accion) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard — DocuManager</title>
-    <link rel="stylesheet" href="/documanager/css/style.css">
+    <link rel="stylesheet" href="<?= assetUrl('/documanager/css/style.css') ?>">
     <style>
         .two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
         .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; }

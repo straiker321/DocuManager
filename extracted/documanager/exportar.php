@@ -33,7 +33,7 @@ if (!empty($params)) $urlExcel .= '?' . http_build_query($params);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exportar a Excel — DocuManager</title>
-    <link rel="stylesheet" href="/documanager/css/style.css">
+    <link rel="stylesheet" href="<?= assetUrl('/documanager/css/style.css') ?>">
     <style>
         .export-header {
             background: var(--bg-card);

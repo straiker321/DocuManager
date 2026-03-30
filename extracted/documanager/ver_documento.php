@@ -45,7 +45,7 @@ foreach (($cats['data'] ?? []) as $cat) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ver documento — DocuManager</title>
-    <link rel="stylesheet" href="/documanager/css/style.css">
+    <link rel="stylesheet" href="<?= assetUrl('/documanager/css/style.css') ?>">
     <style>
         .detail-grid { display:grid; grid-template-columns: 360px 1fr; gap:1.25rem; }
         .detail-meta { display:grid; gap:0.85rem; }

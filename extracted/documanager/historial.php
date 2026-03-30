@@ -42,7 +42,7 @@ function colorAccion($accion) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Historial — DocuManager</title>
-    <link rel="stylesheet" href="/documanager/css/style.css">
+    <link rel="stylesheet" href="<?= assetUrl('/documanager/css/style.css') ?>">
     <style>
         .timeline { position: relative; padding-left: 2rem; }
         .timeline::before {

@@ -36,7 +36,7 @@ if (isset($_GET['edit'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Categorías — DocuManager</title>
-    <link rel="stylesheet" href="/documanager/css/style.css">
+    <link rel="stylesheet" href="<?= assetUrl('/documanager/css/style.css') ?>">
 </head>
 <body>
 <?php include 'includes/navbar.php'; ?>
