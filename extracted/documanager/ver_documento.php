@@ -268,9 +268,14 @@ foreach (($cats['data'] ?? []) as $cat) {
     try {
         const res = await fetch(fileUrl);
         if (!res.ok) throw new Error('HTTP ' + res.status);
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        box.innerHTML = `<iframe class="preview-frame" src="${blobUrl}#toolbar=1&navpanes=0"></iframe>`;
+        const raw = await res.arrayBuffer();
+        const pdfBlob = new Blob([raw], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        box.className = '';
+        box.style.width = '100%';
+        box.style.height = '82vh';
+        box.style.padding = '0';
+        box.innerHTML = `<iframe class="preview-frame" style="display:block;width:100%;height:82vh;border:none" src="${blobUrl}#toolbar=1&navpanes=0"></iframe>`;
     } catch (e) {
         box.innerHTML = `<h3 style="margin-bottom:8px">No se pudo mostrar el PDF</h3><p>Puedes abrirlo o descargarlo manualmente.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">Abrir PDF</a><a href="<?= htmlspecialchars($archivoDownloadUrl) ?>" target="_blank" class="btn btn-success">Descargar</a></div>`;
     }
