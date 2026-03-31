@@ -22,7 +22,9 @@ if ((bool)(docValue($documento, 'confidencial') ?? false) && !isPresidente()) {
 $archivoNombre = docValue($documento, 'archivoNombre');
 $archivoTipo = strtolower((string)(docValue($documento, 'archivoTipo') ?? ''));
 $archivoTamano = (int)(docValue($documento, 'archivoTamano') ?? 0);
-$archivoUrl = 'http://localhost:8080/archivos/descargar/' . docValue($documento, 'id');
+$archivoNombreUrl = rawurlencode((string)$archivoNombre);
+$archivoUrl = '/documanager/archivo_proxy.php?id=' . docValue($documento, 'id') . '&name=' . $archivoNombreUrl;
+$archivoDownloadUrl = '/documanager/archivo_proxy.php?id=' . docValue($documento, 'id') . '&download=1&name=' . $archivoNombreUrl;
 $extension = strtolower(pathinfo((string)$archivoNombre, PATHINFO_EXTENSION));
 
 $esPdf = $archivoTipo === 'application/pdf' || $extension === 'pdf';
@@ -34,9 +36,9 @@ $esTexto = str_starts_with($archivoTipo, 'text/') || in_array($extension, ['txt'
 $archivoUrlEncoded = rawurlencode($archivoUrl);
 $officeViewerUrl = 'https://view.officeapps.live.com/op/embed.aspx?src=' . $archivoUrlEncoded;
 
-$host = strtolower((string)parse_url($archivoUrl, PHP_URL_HOST));
+$host = strtolower((string)parse_url(API_URL, PHP_URL_HOST));
 $esHostLocal = in_array($host, ['localhost', '127.0.0.1', '::1'], true);
-$usarOfficeEmbed = $esOffice && !$esHostLocal;
+$usarOfficeEmbed = false;
 
 function formatBytes(int $bytes): string {
     if ($bytes <= 0) return '-';
@@ -101,7 +103,7 @@ foreach (($cats['data'] ?? []) as $cat) {
         <div style="display:flex;gap:8px;flex-wrap:wrap">
             <a href="/documanager/documentos.php" class="btn btn-secondary">← Volver</a>
             <?php if($archivoNombre): ?>
-            <a href="<?= htmlspecialchars($archivoUrl) ?>" class="btn btn-success" target="_blank">⬇️ Descargar archivo</a>
+            <a href="<?= htmlspecialchars($archivoDownloadUrl) ?>" class="btn btn-success" target="_blank">⬇️ Descargar archivo</a>
             <?php endif; ?>
         </div>
     </div>
@@ -171,7 +173,7 @@ foreach (($cats['data'] ?? []) as $cat) {
                     </ul>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
                         <a href="<?= htmlspecialchars($archivoUrl) ?>" class="btn btn-secondary" target="_blank">Abrir en nueva pestaña</a>
-                        <a href="<?= htmlspecialchars($archivoUrl) ?>" class="btn btn-success" target="_blank">Descargar archivo</a>
+                        <a href="<?= htmlspecialchars($archivoDownloadUrl) ?>" class="btn btn-success" target="_blank">Descargar archivo</a>
                     </div>
                 </div>
             <?php endif; ?>
