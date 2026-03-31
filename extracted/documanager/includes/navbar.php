@@ -59,3 +59,14 @@
         </a>
     </div>
 </nav>
+<script>
+(() => {
+    const closeStaleOverlays = () => {
+        document.querySelectorAll('.modal-overlay.open').forEach((overlay) => {
+            overlay.classList.remove('open');
+        });
+    };
+    document.addEventListener('DOMContentLoaded', closeStaleOverlays);
+    window.addEventListener('pageshow', closeStaleOverlays);
+})();
+</script>
