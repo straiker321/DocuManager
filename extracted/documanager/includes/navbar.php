@@ -65,8 +65,8 @@
     const normalizeOverlays = () => {
         document.querySelectorAll('.modal-overlay').forEach((overlay) => {
             const isOpen = overlay.classList.contains('open');
-            overlay.style.display = isOpen ? 'block' : 'none';
-            overlay.style.pointerEvents = 'auto';
+            overlay.style.display = isOpen ? 'flex' : 'none';
+            overlay.style.pointerEvents = 'none';
             overlay.style.opacity = '1';
             overlay.style.visibility = 'visible';
         });

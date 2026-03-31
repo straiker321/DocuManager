@@ -271,31 +271,32 @@ td strong { color: var(--text); font-weight: 500; }
    MODAL
 ══════════════════════════════ */
 .modal-overlay {
-    display: none !important; position: static !important; inset: auto !important; z-index: auto !important;
+    display: none !important; position: fixed !important; inset: 0 !important; z-index: 200 !important;
     background: transparent;
     backdrop-filter: none;
-    align-items: initial; justify-content: initial;
-    padding: 0;
+    align-items: center; justify-content: center;
+    padding: 1rem;
     opacity: 1 !important;
-    pointer-events: auto !important;
+    pointer-events: none !important;
     visibility: visible !important;
 }
 .modal-overlay.open {
-    display: block !important;
+    display: flex !important;
     opacity: 1 !important;
-    pointer-events: auto !important;
+    pointer-events: none !important;
     visibility: visible !important;
 }
+.modal-overlay .modal { pointer-events: auto !important; }
 .modal {
     background: var(--bg-card);
     border: 1px solid var(--border-light);
     border-radius: var(--radius);
     padding: 1.75rem;
     width: 100%; max-width: 560px;
-    max-height: none; overflow-y: visible;
+    max-height: 90vh; overflow-y: auto;
     box-shadow: var(--shadow);
     animation: fadeUp 0.2s ease;
-    margin: 1rem auto 0;
+    margin: 0;
 }
 @keyframes fadeUp {
     from { opacity: 0; transform: translateY(12px) scale(0.97); }
