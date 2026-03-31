@@ -122,6 +122,13 @@ function isEditor() {
     return $role === 'EDITOR' || str_contains($role, 'EDITOR') || isAdmin();
 }
 
+function canManageDocuments(): bool {
+    $role = currentRole();
+    if (isAdmin() || isEditor()) return true;
+    if ($role === '') return false;
+    return !str_contains($role, 'VIEWER') && !str_contains($role, 'LECTOR');
+}
+
 function isPresidente() {
     $role = currentRole();
     if ($role === 'PRESIDENTE' || str_contains($role, 'PRESIDENTE') || str_contains($role, 'PRESIDENT')) {

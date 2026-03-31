@@ -5,7 +5,7 @@ requireLogin();
 $msg = $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['_action'])) {
-    if (!(isEditor() || isAdmin())) { $error = 'No tienes permisos para esta acción.'; goto show; }
+    if (!canManageDocuments()) { $error = 'No tienes permisos para esta acción.'; goto show; }
 
     $id = (int)($_POST['id'] ?? 0);
     $action = $_POST['_action'] ?? '';
@@ -111,7 +111,7 @@ $cats       = api('GET', '/categorias');
 $categorias = $cats['data'] ?? [];
 
 $editDoc = null;
-$canManage = isEditor() || isAdmin();
+$canManage = canManageDocuments();
 if (isset($_GET['edit']) && $canManage) {
     $r       = api('GET', '/documentos/' . (int)$_GET['edit']);
     $editDoc = $r['data'] ?? null;
