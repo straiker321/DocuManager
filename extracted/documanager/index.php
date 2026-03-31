@@ -127,6 +127,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <button type="submit" class="btn-login">Entrar al sistema</button>
         </form>
+        <div style="text-align:center;margin-top:12px;font-size:0.82rem;color:var(--text-2)">
+            ¿No tienes cuenta?
+            <a href="/documanager/registro.php" style="color:var(--accent)">Regístrate aquí</a>
+        </div>
     </div>
 
     <div class="login-footer">
