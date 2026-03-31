@@ -64,10 +64,10 @@
     const normalizeOverlays = () => {
         document.querySelectorAll('.modal-overlay').forEach((overlay) => {
             const isOpen = overlay.classList.contains('open');
-            overlay.style.display = isOpen ? 'flex' : 'none';
-            overlay.style.pointerEvents = isOpen ? 'auto' : 'none';
-            overlay.style.opacity = isOpen ? '1' : '0';
-            overlay.style.visibility = isOpen ? 'visible' : 'hidden';
+            overlay.style.display = isOpen ? 'block' : 'none';
+            overlay.style.pointerEvents = 'auto';
+            overlay.style.opacity = '1';
+            overlay.style.visibility = 'visible';
         });
     };
     const closeStaleOverlays = () => {
