@@ -61,12 +61,27 @@
 </nav>
 <script>
 (() => {
+    const normalizeOverlays = () => {
+        document.querySelectorAll('.modal-overlay').forEach((overlay) => {
+            const isOpen = overlay.classList.contains('open');
+            overlay.style.display = isOpen ? 'flex' : 'none';
+            overlay.style.pointerEvents = isOpen ? 'auto' : 'none';
+            overlay.style.opacity = isOpen ? '1' : '0';
+            overlay.style.visibility = isOpen ? 'visible' : 'hidden';
+        });
+    };
     const closeStaleOverlays = () => {
         document.querySelectorAll('.modal-overlay.open').forEach((overlay) => {
             overlay.classList.remove('open');
         });
+        normalizeOverlays();
     };
     document.addEventListener('DOMContentLoaded', closeStaleOverlays);
     window.addEventListener('pageshow', closeStaleOverlays);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeStaleOverlays();
+    });
+    const observer = new MutationObserver(normalizeOverlays);
+    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 })();
 </script>
