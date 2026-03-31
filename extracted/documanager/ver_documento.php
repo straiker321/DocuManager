@@ -66,15 +66,15 @@ foreach (($cats['data'] ?? []) as $cat) {
     <title>Ver documento — DocuManager</title>
     <link rel="stylesheet" href="<?= assetUrl('/documanager/css/style.css') ?>">
     <style>
-        .detail-grid { display:grid; grid-template-columns: 360px 1fr; gap:1.25rem; }
+        .detail-grid { display:grid; grid-template-columns: 320px 1fr; gap:1.25rem; }
         .detail-meta { display:grid; gap:0.85rem; }
         .meta-item { padding:0.9rem 1rem; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg-surface); }
         .meta-item span { display:block; color:var(--text-3); font-size:0.74rem; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px; }
         .meta-item strong { font-size:0.92rem; }
-        .preview-box { min-height:72vh; display:flex; align-items:center; justify-content:center; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
-        .preview-frame { width:100%; height:72vh; border:none; background:#111; }
-        .preview-image { display:block; width:100%; max-height:72vh; object-fit:contain; background:#111; }
-        .preview-media { width:100%; max-height:72vh; background:#111; }
+        .preview-box { min-height:82vh; display:flex; align-items:center; justify-content:center; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+        .preview-frame { width:100%; height:82vh; border:none; background:#111; }
+        .preview-image { display:block; width:100%; max-height:82vh; object-fit:contain; background:#111; }
+        .preview-media { width:100%; max-height:82vh; background:#111; }
         .preview-empty { padding:2rem; text-align:center; color:var(--text-2); }
         .preview-generic {
             width: min(700px, 100%);
@@ -132,7 +132,11 @@ foreach (($cats['data'] ?? []) as $cat) {
                     <p>Este registro no tiene un archivo para mostrar en pantalla.</p>
                 </div>
             <?php elseif($esPdf): ?>
-                <iframe class="preview-frame" src="<?= htmlspecialchars($archivoUrl) ?>#toolbar=1"></iframe>
+                <div class="preview-empty" id="pdfPreviewContainer"
+                     data-file-url="<?= htmlspecialchars($archivoUrl) ?>">
+                    <h3 style="margin-bottom:8px">Cargando vista previa del PDF…</h3>
+                    <p>Estamos preparando el documento para visualización en pantalla.</p>
+                </div>
             <?php elseif($esImagen): ?>
                 <img class="preview-image" src="<?= htmlspecialchars($archivoUrl) ?>" alt="Vista previa del documento">
             <?php elseif($esVideo): ?>
@@ -250,6 +254,25 @@ foreach (($cats['data'] ?? []) as $cat) {
         box.innerHTML = `<div style="text-align:left;max-width:100%;max-height:68vh;overflow:auto;background:#0b1020;color:#e5e7eb;padding:1rem;border-radius:10px;white-space:pre-wrap;word-break:break-word">${text.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</div>`;
     } catch (e) {
         box.innerHTML = `<h3 style="margin-bottom:8px">No se pudo renderizar el texto</h3><p>Puedes abrir o descargar el archivo para revisarlo.</p><a href="${fileUrl}" class="btn btn-success" target="_blank" style="margin-top:12px">Descargar archivo</a>`;
+    }
+})();
+</script>
+<?php endif; ?>
+
+<?php if($esPdf): ?>
+<script>
+(async function() {
+    const box = document.getElementById('pdfPreviewContainer');
+    if (!box) return;
+    const fileUrl = box.dataset.fileUrl;
+    try {
+        const res = await fetch(fileUrl);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        box.innerHTML = `<iframe class="preview-frame" src="${blobUrl}#toolbar=1&navpanes=0"></iframe>`;
+    } catch (e) {
+        box.innerHTML = `<h3 style="margin-bottom:8px">No se pudo mostrar el PDF</h3><p>Puedes abrirlo o descargarlo manualmente.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px"><a href="${fileUrl}" target="_blank" class="btn btn-secondary">Abrir PDF</a><a href="<?= htmlspecialchars($archivoDownloadUrl) ?>" target="_blank" class="btn btn-success">Descargar</a></div>`;
     }
 })();
 </script>
