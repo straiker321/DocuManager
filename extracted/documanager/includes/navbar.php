@@ -61,6 +61,7 @@
 </nav>
 <script>
 (() => {
+    const hasExplicitModalState = () => /(?:^|[?&])edit=/.test(window.location.search);
     const normalizeOverlays = () => {
         document.querySelectorAll('.modal-overlay').forEach((overlay) => {
             const isOpen = overlay.classList.contains('open');
@@ -71,6 +72,10 @@
         });
     };
     const closeStaleOverlays = () => {
+        if (hasExplicitModalState()) {
+            normalizeOverlays();
+            return;
+        }
         document.querySelectorAll('.modal-overlay.open').forEach((overlay) => {
             overlay.classList.remove('open');
         });
