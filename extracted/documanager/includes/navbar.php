@@ -1,4 +1,4 @@
-<?php requireLogin(); ?>
+<?php requireLogin(false); ?>
 <nav class="navbar">
     <div class="nav-brand">
         <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
