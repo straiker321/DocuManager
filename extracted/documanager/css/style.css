@@ -271,15 +271,21 @@ td strong { color: var(--text); font-weight: 500; }
    MODAL
 ══════════════════════════════ */
 .modal-overlay {
-    display: none; position: fixed; inset: 0; z-index: 200;
+    display: none !important; position: fixed; inset: 0; z-index: 200;
     background: rgba(0,0,0,0.75);
     backdrop-filter: blur(6px);
     align-items: center; justify-content: center;
     padding: 1rem;
-    opacity: 0;
-    pointer-events: none;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
 }
-.modal-overlay.open { display: flex; opacity: 1; pointer-events: auto; }
+.modal-overlay.open {
+    display: flex !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+}
 .modal {
     background: var(--bg-card);
     border: 1px solid var(--border-light);
